@@ -1,0 +1,4 @@
+org/wso2/carbon/extension/custom/mutual/tls/handlers/MTLSTokenBindingAuthorizationCodeGrantHandler.class
+org/wso2/carbon/extension/custom/mutual/tls/handlers/introspection/IntrospectionResponseInterceptor.class
+org/wso2/carbon/extension/custom/mutual/tls/handlers/internal/MutualTLSHandlerServiceComponent.class
+org/wso2/carbon/extension/custom/mutual/tls/handlers/introspection/ISIntrospectionDataProvider.class
