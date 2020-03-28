@@ -27,7 +27,7 @@ import org.wso2.carbon.identity.oauth2.IdentityOAuth2Exception;
 import org.wso2.carbon.identity.oauth2.dto.OAuth2AccessTokenRespDTO;
 import org.wso2.carbon.identity.oauth2.model.HttpRequestHeader;
 import org.wso2.carbon.identity.oauth2.token.OAuthTokenReqMessageContext;
-import org.wso2.carbon.identity.oauth2.token.handlers.grant.AuthorizationCodeGrantHandler;
+import org.wso2.carbon.identity.oauth2.token.handlers.grant.ClientCredentialsGrantHandler;
 
 import java.io.ByteArrayInputStream;
 import java.security.cert.CertificateException;
@@ -44,20 +44,22 @@ import java.util.Optional;
 /**
  * This class is used to bound the MTLS certificate of the client to the access token issued. Here, the certificate is
  * bounded to the access token using a hidden scope.
+ *
+ * @see <href="https://tools.ietf.org/html/draft-ietf-oauth-mtls-17">IETF OAuth MTLS</>
  */
-public class MTLSTokenBindingAuthorizationCodeGrantHandler extends AuthorizationCodeGrantHandler {
+public class MTLSTokenBindingClientCredentialsGrantHandler extends ClientCredentialsGrantHandler {
 
-    private static final String CERT_THUMBPRINT = "x5t";
-    private static final String CERT_THUMBPRINT_SEPERATOR = ":";
+    private static Log log = LogFactory.getLog(MTLSTokenBindingClientCredentialsGrantHandler.class);
+
+    public static final String AUTHENTICATOR_TYPE_PARAM = "authenticatorType";
     private static final String SHA256_DIGEST_ALGORITHM = "SHA256";
-    private static final String AUTHENTICATOR_TYPE_PARAM = "authenticatorType";
-    private static final String AUTHENTICATOR_TYPE_MTLS = "mtls";
-    private static final String BEGIN_CERT = "-----BEGIN CERTIFICATE-----";
-    private static final String END_CERT = "-----END CERTIFICATE-----";
-    private static final String MTLS_AUTH_HEADER = "MTLS.ClientAuthenticationHeader";
+    public static final String AUTHENTICATOR_TYPE_MTLS = "mtls";
+    public static final String CERT_THUMBPRINT = "x5t";
+    public static final String CERT_THUMBPRINT_SEPERATOR = ":";
+    public static final String MTLS_AUTH_HEADER = "MTLS.ClientAuthenticationHeader";
+    public static final String BEGIN_CERT = "-----BEGIN CERTIFICATE-----";
+    public static final String END_CERT = "-----END CERTIFICATE-----";
     private static Map<String, Object> configuration = new HashMap<>();
-
-    private static Log log = LogFactory.getLog(MTLSTokenBindingAuthorizationCodeGrantHandler.class);
 
     @Override
     public OAuth2AccessTokenRespDTO issue(OAuthTokenReqMessageContext tokReqMsgCtx)
@@ -104,16 +106,8 @@ public class MTLSTokenBindingAuthorizationCodeGrantHandler extends Authorization
                 tokReqMsgCtx.setScope(scopesList.toArray(new String[scopesList.size()]));
             }
         }
+
         return validateScope;
-    }
-
-    /**
-     * Get Mutual TLS Authenticator Certificate header.
-     * @return
-     */
-    public String getMTLSAuthenitcatorCertificateHeader() {
-
-        return (String) configuration.getOrDefault(MTLS_AUTH_HEADER, "x-mtls-cert");
     }
 
     /**
@@ -138,6 +132,23 @@ public class MTLSTokenBindingAuthorizationCodeGrantHandler extends Authorization
                 .generateCertificate(new ByteArrayInputStream(decoded));
     }
 
+    public String getMTLSAuthenitcatorCertificateHeader() {
+
+        return (String) getConfigElementFromKey(MTLS_AUTH_HEADER, "x-mtls-cert");
+    }
+
+    /**
+     * Returns the element with the provided key if not found return default.
+     *
+     * @param key
+     * @param defaultValue
+     * @return
+     */
+    protected Object getConfigElementFromKey(String key, String defaultValue) {
+
+        return configuration.getOrDefault(key, defaultValue);
+    }
+
     /**
      * Remove the certificate thumbprint prefixed scope from the space delimited list of authorized scopes.
      *
@@ -148,9 +159,8 @@ public class MTLSTokenBindingAuthorizationCodeGrantHandler extends Authorization
         if (scopes != null && scopes.length > 0) {
             List<String> scopesList = new LinkedList<>(Arrays.asList(scopes));
             scopesList.removeIf(s -> s.startsWith(CERT_THUMBPRINT));
-            return scopesList.toArray(new String[0]);
+            return scopesList.toArray(new String[scopesList.size()]);
         }
         return scopes;
     }
-
 }

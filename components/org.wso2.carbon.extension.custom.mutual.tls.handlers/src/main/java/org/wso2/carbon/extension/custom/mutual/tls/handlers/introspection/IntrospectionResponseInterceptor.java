@@ -38,11 +38,11 @@ import java.util.Map;
  */
 public class IntrospectionResponseInterceptor extends AbstractOAuthEventInterceptor {
 
-    public static final String CERT_THUMBPRINT = "x5t";
-    public static final String CERT_THUMBPRINT_SEPERATOR = ":";
-    private static Log log = LogFactory.getLog(IntrospectionResponseInterceptor.class);
-
+    private static final String CERT_THUMBPRINT = "x5t";
+    private static final String CERT_THUMBPRINT_SEPARATOR = ":";
     private static final String CONFIRMATION_CLAIM_ATTRIBUTE = "cnf";
+
+    private static Log log = LogFactory.getLog(IntrospectionResponseInterceptor.class);
 
     @Override
     public void onPostTokenValidation(OAuth2TokenValidationRequestDTO oAuth2TokenValidationRequestDTO,
@@ -64,7 +64,7 @@ public class IntrospectionResponseInterceptor extends AbstractOAuthEventIntercep
             // Iterate the scope list and remove any internal scopes.
             for (String scope : scopeList) {
                 if (scope.startsWith(CERT_THUMBPRINT)) {
-                    String[] certHashScope = scope.split(CERT_THUMBPRINT_SEPERATOR, 2);
+                    String[] certHashScope = scope.split(CERT_THUMBPRINT_SEPARATOR, 2);
                     cnf = new JSONObject();
                     cnf.put(certHashScope[0].trim(), certHashScope[1].trim());
 

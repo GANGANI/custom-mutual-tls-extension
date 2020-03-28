@@ -23,31 +23,34 @@ import org.apache.commons.logging.LogFactory;
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
-import org.wso2.carbon.extension.custom.mutual.tls.handlers.MTLSTokenBindingAuthorizationCodeGrantHandler;
+import org.osgi.service.component.annotations.Component;
 import org.wso2.carbon.extension.custom.mutual.tls.handlers.introspection.ISIntrospectionDataProvider;
 import org.wso2.carbon.extension.custom.mutual.tls.handlers.introspection.IntrospectionResponseInterceptor;
 import org.wso2.carbon.identity.oauth.event.OAuthEventInterceptor;
 import org.wso2.carbon.identity.oauth2.IntrospectionDataProvider;
-import org.wso2.carbon.identity.oauth2.token.handlers.grant.AuthorizationCodeGrantHandler;
 
 /**
  * TLS Mutual Auth osgi Component.
  */
+@Component(
+        name = "org.wso2.carbon.extension.custom.mutual.tls.handlers",
+        immediate = true
+)
 public class MutualTLSHandlerServiceComponent {
 
     private static Log log = LogFactory.getLog(MutualTLSHandlerServiceComponent.class);
     @Activate
     protected void activate(ComponentContext context) {
-        if (log.isDebugEnabled()) {
-            log.debug("Open banking Key Manager Extensions component is activated successfully.");
-        }
+
         BundleContext bundleContext = context.getBundleContext();
         try {
             bundleContext.registerService(OAuthEventInterceptor.class, new IntrospectionResponseInterceptor(), null);
             bundleContext.registerService(IntrospectionDataProvider.class, new ISIntrospectionDataProvider(), null);
-            bundleContext.registerService(AuthorizationCodeGrantHandler.class, new MTLSTokenBindingAuthorizationCodeGrantHandler(), null);
+            if (log.isDebugEnabled()) {
+                log.debug("Handler component is activated successfully.");
+            }
         } catch (Throwable e) {
-            log.error("Error occurred while activating Key Manager Extensions component", e);
+            log.error("Error occurred while activating Handler Extensions component", e);
         }
     }
 }

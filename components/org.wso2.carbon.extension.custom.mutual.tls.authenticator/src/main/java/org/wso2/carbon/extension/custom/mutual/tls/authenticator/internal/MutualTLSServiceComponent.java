@@ -37,14 +37,13 @@ import org.wso2.carbon.identity.oauth2.client.authentication.OAuthClientAuthenti
 public class MutualTLSServiceComponent {
 
     private static final Log log = LogFactory.getLog(MutualTLSServiceComponent.class);
-    private BundleContext bundleContext;
 
     @Activate
     protected void activate(ComponentContext context) {
 
         try {
             // Registering MutualTLSClientAuthenticator as an OSGIService.
-            bundleContext = context.getBundleContext();
+            BundleContext bundleContext = context.getBundleContext();
             MutualTLSClientAuthenticator mutualTLSClientAuthenticator = new MutualTLSClientAuthenticator();
             bundleContext.registerService(OAuthClientAuthenticator.class.getName(), mutualTLSClientAuthenticator,
                     null);
