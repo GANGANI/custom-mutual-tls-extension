@@ -23,6 +23,7 @@ import com.nimbusds.jose.util.X509CertUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.wso2.carbon.extension.custom.mutual.tls.handlers.utils.CommonConstants;
 import org.wso2.carbon.identity.oauth2.IdentityOAuth2Exception;
 import org.wso2.carbon.identity.oauth2.dto.OAuth2AccessTokenRespDTO;
 import org.wso2.carbon.identity.oauth2.model.HttpRequestHeader;
@@ -35,10 +36,8 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -46,16 +45,6 @@ import java.util.Optional;
  * bounded to the access token using a hidden scope.
  */
 public class MTLSTokenBindingAuthorizationCodeGrantHandler extends AuthorizationCodeGrantHandler {
-
-    private static final String CERT_THUMBPRINT = "x5t";
-    private static final String CERT_THUMBPRINT_SEPERATOR = ":";
-    private static final String SHA256_DIGEST_ALGORITHM = "SHA256";
-    private static final String AUTHENTICATOR_TYPE_PARAM = "authenticatorType";
-    private static final String AUTHENTICATOR_TYPE_MTLS = "mtls";
-    private static final String BEGIN_CERT = "-----BEGIN CERTIFICATE-----";
-    private static final String END_CERT = "-----END CERTIFICATE-----";
-    private static final String MTLS_AUTH_HEADER = "MTLS.ClientAuthenticationHeader";
-    private static Map<String, Object> configuration = new HashMap<>();
 
     private static Log log = LogFactory.getLog(MTLSTokenBindingAuthorizationCodeGrantHandler.class);
 
@@ -78,8 +67,8 @@ public class MTLSTokenBindingAuthorizationCodeGrantHandler extends Authorization
                 Arrays.stream(requestHeaders).filter(h -> headerName.equals(h.getName())).findFirst();
 
         String authenticatorType = (String) tokReqMsgCtx.getOauth2AccessTokenReqDTO().getoAuthClientAuthnContext()
-                .getParameter(AUTHENTICATOR_TYPE_PARAM);
-        if (certHeader.isPresent() && AUTHENTICATOR_TYPE_MTLS.equals(authenticatorType)) {
+                .getParameter(CommonConstants.AUTHENTICATOR_TYPE_PARAM);
+        if (certHeader.isPresent() && CommonConstants.AUTHENTICATOR_TYPE_MTLS.equals(authenticatorType)) {
             Base64URL certThumbprint = null;
             if (log.isDebugEnabled()) {
                 log.debug("Client MTLS certificate found: " + certHeader);
@@ -99,8 +88,8 @@ public class MTLSTokenBindingAuthorizationCodeGrantHandler extends Authorization
                 }
                 String[] scopes = tokReqMsgCtx.getScope();
                 List<String> scopesList = new LinkedList<>(Arrays.asList(scopes));
-                scopesList.add(CERT_THUMBPRINT + "#" + SHA256_DIGEST_ALGORITHM +
-                        CERT_THUMBPRINT_SEPERATOR + certThumbprint.toString());
+                scopesList.add(CommonConstants.CERT_THUMBPRINT + "#" + CommonConstants.SHA256_DIGEST_ALGORITHM +
+                        CommonConstants.CERT_THUMBPRINT_SEPERATOR + certThumbprint.toString());
                 tokReqMsgCtx.setScope(scopesList.toArray(new String[scopesList.size()]));
             }
         }
@@ -113,7 +102,7 @@ public class MTLSTokenBindingAuthorizationCodeGrantHandler extends Authorization
      */
     public String getMTLSAuthenitcatorCertificateHeader() {
 
-        return (String) configuration.getOrDefault(MTLS_AUTH_HEADER, "x-mtls-cert");
+        return (String) CommonConstants.configuration.getOrDefault(CommonConstants.MTLS_AUTH_HEADER, "x-mtls-cert");
     }
 
     /**
@@ -130,8 +119,8 @@ public class MTLSTokenBindingAuthorizationCodeGrantHandler extends Authorization
 
         // Remove Certificate Headers
         byte[] decoded = Base64.getDecoder().decode(decodedContent
-                .replaceAll(BEGIN_CERT, StringUtils.EMPTY)
-                .replaceAll(END_CERT, StringUtils.EMPTY).trim()
+                .replaceAll(CommonConstants.BEGIN_CERT, StringUtils.EMPTY)
+                .replaceAll(CommonConstants.END_CERT, StringUtils.EMPTY).trim()
         );
 
         return (java.security.cert.X509Certificate) CertificateFactory.getInstance("X.509")
@@ -147,7 +136,7 @@ public class MTLSTokenBindingAuthorizationCodeGrantHandler extends Authorization
     private String[] getReducedResponseScopes(String[] scopes) {
         if (scopes != null && scopes.length > 0) {
             List<String> scopesList = new LinkedList<>(Arrays.asList(scopes));
-            scopesList.removeIf(s -> s.startsWith(CERT_THUMBPRINT));
+            scopesList.removeIf(s -> s.startsWith(CommonConstants.CERT_THUMBPRINT));
             return scopesList.toArray(new String[0]);
         }
         return scopes;

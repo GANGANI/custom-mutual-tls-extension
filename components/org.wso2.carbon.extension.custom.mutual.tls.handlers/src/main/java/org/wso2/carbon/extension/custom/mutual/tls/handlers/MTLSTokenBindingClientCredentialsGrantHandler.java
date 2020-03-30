@@ -23,6 +23,7 @@ import com.nimbusds.jose.util.X509CertUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.wso2.carbon.extension.custom.mutual.tls.handlers.utils.CommonConstants;
 import org.wso2.carbon.identity.oauth2.IdentityOAuth2Exception;
 import org.wso2.carbon.identity.oauth2.dto.OAuth2AccessTokenRespDTO;
 import org.wso2.carbon.identity.oauth2.model.HttpRequestHeader;
@@ -35,10 +36,8 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -50,16 +49,6 @@ import java.util.Optional;
 public class MTLSTokenBindingClientCredentialsGrantHandler extends ClientCredentialsGrantHandler {
 
     private static Log log = LogFactory.getLog(MTLSTokenBindingClientCredentialsGrantHandler.class);
-
-    public static final String AUTHENTICATOR_TYPE_PARAM = "authenticatorType";
-    private static final String SHA256_DIGEST_ALGORITHM = "SHA256";
-    public static final String AUTHENTICATOR_TYPE_MTLS = "mtls";
-    public static final String CERT_THUMBPRINT = "x5t";
-    public static final String CERT_THUMBPRINT_SEPERATOR = ":";
-    public static final String MTLS_AUTH_HEADER = "MTLS.ClientAuthenticationHeader";
-    public static final String BEGIN_CERT = "-----BEGIN CERTIFICATE-----";
-    public static final String END_CERT = "-----END CERTIFICATE-----";
-    private static Map<String, Object> configuration = new HashMap<>();
 
     @Override
     public OAuth2AccessTokenRespDTO issue(OAuthTokenReqMessageContext tokReqMsgCtx)
@@ -80,8 +69,8 @@ public class MTLSTokenBindingClientCredentialsGrantHandler extends ClientCredent
                 Arrays.stream(requestHeaders).filter(h -> headerName.equals(h.getName())).findFirst();
 
         String authenticatorType = (String) tokReqMsgCtx.getOauth2AccessTokenReqDTO().getoAuthClientAuthnContext()
-                .getParameter(AUTHENTICATOR_TYPE_PARAM);
-        if (certHeader.isPresent() && AUTHENTICATOR_TYPE_MTLS.equals(authenticatorType)) {
+                .getParameter(CommonConstants.AUTHENTICATOR_TYPE_PARAM);
+        if (certHeader.isPresent() && CommonConstants.AUTHENTICATOR_TYPE_MTLS.equals(authenticatorType)) {
             Base64URL certThumbprint = null;
             if (log.isDebugEnabled()) {
                 log.debug("Client MTLS certificate found: " + certHeader);
@@ -101,8 +90,8 @@ public class MTLSTokenBindingClientCredentialsGrantHandler extends ClientCredent
                 }
                 String[] scopes = tokReqMsgCtx.getScope();
                 List<String> scopesList = new LinkedList<>(Arrays.asList(scopes));
-                scopesList.add(CERT_THUMBPRINT + "#" + SHA256_DIGEST_ALGORITHM +
-                        CERT_THUMBPRINT_SEPERATOR + certThumbprint.toString());
+                scopesList.add(CommonConstants.CERT_THUMBPRINT + "#" + CommonConstants.SHA256_DIGEST_ALGORITHM +
+                        CommonConstants.CERT_THUMBPRINT_SEPERATOR + certThumbprint.toString());
                 tokReqMsgCtx.setScope(scopesList.toArray(new String[scopesList.size()]));
             }
         }
@@ -124,8 +113,8 @@ public class MTLSTokenBindingClientCredentialsGrantHandler extends ClientCredent
 
         // Remove Certificate Headers
         byte[] decoded = Base64.getDecoder().decode(decodedContent
-                .replaceAll(BEGIN_CERT, StringUtils.EMPTY)
-                .replaceAll(END_CERT, StringUtils.EMPTY).trim()
+                .replaceAll(CommonConstants.BEGIN_CERT, StringUtils.EMPTY)
+                .replaceAll(CommonConstants.END_CERT, StringUtils.EMPTY).trim()
         );
 
         return (java.security.cert.X509Certificate) CertificateFactory.getInstance("X.509")
@@ -134,19 +123,18 @@ public class MTLSTokenBindingClientCredentialsGrantHandler extends ClientCredent
 
     public String getMTLSAuthenitcatorCertificateHeader() {
 
-        return (String) getConfigElementFromKey(MTLS_AUTH_HEADER, "x-mtls-cert");
+        return (String) getConfigElementFromKey(CommonConstants.MTLS_AUTH_HEADER);
     }
 
     /**
      * Returns the element with the provided key if not found return default.
      *
      * @param key
-     * @param defaultValue
      * @return
      */
-    protected Object getConfigElementFromKey(String key, String defaultValue) {
+    protected Object getConfigElementFromKey(String key) {
 
-        return configuration.getOrDefault(key, defaultValue);
+        return CommonConstants.configuration.getOrDefault(key, "x-mtls-cert");
     }
 
     /**
@@ -158,7 +146,10 @@ public class MTLSTokenBindingClientCredentialsGrantHandler extends ClientCredent
     private String[] getReducedResponseScopes(String[] scopes) {
         if (scopes != null && scopes.length > 0) {
             List<String> scopesList = new LinkedList<>(Arrays.asList(scopes));
-            scopesList.removeIf(s -> s.startsWith(CERT_THUMBPRINT));
+            if (scopes.length == 1) {
+                scopesList.add(0, "default");
+            }
+            scopesList.removeIf(s -> s.startsWith(CommonConstants.CERT_THUMBPRINT));
             return scopesList.toArray(new String[scopesList.size()]);
         }
         return scopes;

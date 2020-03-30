@@ -21,6 +21,7 @@ package org.wso2.carbon.extension.custom.mutual.tls.handlers;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.wso2.carbon.extension.custom.mutual.tls.handlers.utils.CommonConstants;
 import org.wso2.carbon.identity.oauth2.IdentityOAuth2Exception;
 import org.wso2.carbon.identity.oauth2.dto.OAuth2AccessTokenRespDTO;
 import org.wso2.carbon.identity.oauth2.token.OAuthTokenReqMessageContext;
@@ -31,6 +32,8 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
+//import org.wso2.carbon.identity.core.util.IdentityConfigParser;
+
 /**
  * If MTLS token binding is used (MTLSTokenBindingAuthorizationCodeGrantHandler), the certificate of the client is
  * bounded to the access token using a hidden scope. This class is used to remove the hidden scope from the token
@@ -39,10 +42,6 @@ import java.util.List;
  * @see <href="https://tools.ietf.org/html/draft-ietf-oauth-mtls-17">IETF OAuth MTLS</>
  */
 public class MTLSTokenBindingRefreshGrantHandler extends RefreshGrantHandler {
-
-    public static final String CERT_THUMBPRINT = "x5t";
-    public static final String IS_SCOPE_PREFIX = "IS_";
-    public static final String TIMESTAMP_SCOPE_PREFIX = "TIME_";
 
     private static final Log log = LogFactory.getLog(MTLSTokenBindingRefreshGrantHandler.class);
 
@@ -86,7 +85,7 @@ public class MTLSTokenBindingRefreshGrantHandler extends RefreshGrantHandler {
     }
 
     /**
-     * Remove the certificate thumbprint prefixed scope from the space delimited list of authorized scopes
+     * Remove the certificate thumbprint prefixed scope from the space delimited list of authorized scopes.
      *
      * @param scopes Authorized scopes of the token
      * @return scopes by removing the custom scope
@@ -95,16 +94,16 @@ public class MTLSTokenBindingRefreshGrantHandler extends RefreshGrantHandler {
 
         if (scopes != null && scopes.length > 0) {
             List<String> scopesList = new LinkedList<>(Arrays.asList(scopes));
-            scopesList.removeIf(s -> s.startsWith(CERT_THUMBPRINT));
-            return scopesList.toArray(new String[scopesList.size()]);
+            scopesList.removeIf(s -> s.startsWith(CommonConstants.CERT_THUMBPRINT));
+            return scopesList.toArray(new String[0]);
         }
         return scopes;
     }
 
     private boolean isAllowedScope(String scope) {
 
-        return scope.startsWith(CERT_THUMBPRINT) ||
-                scope.startsWith(IS_SCOPE_PREFIX) ||
-                scope.startsWith(TIMESTAMP_SCOPE_PREFIX);
+        return scope.startsWith(CommonConstants.CERT_THUMBPRINT) ||
+                scope.startsWith(CommonConstants.IS_SCOPE_PREFIX) ||
+                scope.startsWith(CommonConstants.TIMESTAMP_SCOPE_PREFIX);
     }
 }
